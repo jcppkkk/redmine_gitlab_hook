@@ -76,13 +76,12 @@ class GitlabHookController < SysController
 
     if Setting.plugin_redmine_gitlab_hook['all_branches'] == 'yes'
       command = git_command(prefix, "fetch --all#{prune}", repository)
-      exec(command)
+      return exec(command)
     else
       command = git_command(prefix, "fetch#{prune} origin", repository)
-      if exec(command)
-        command = git_command(prefix, "fetch#{prune} origin '+refs/heads/*:refs/heads/*'", repository)
-        exec(command)
-      end
+      return False if not exec(command)
+      command = git_command(prefix, "fetch#{prune} origin '+refs/heads/*:refs/heads/*'", repository)
+      return exec(command)
     end
   end
 
