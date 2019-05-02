@@ -85,30 +85,22 @@ class GitlabHookController < SysController
     end
   end
 
-
   def get_repository_name
-    return params[:repository_name] && params[:repository_name].downcase
+    return params[:project][:path_with_namespace].split('/').last
   end
 
-
-  def get_repository_namespace
-    return params[:repository_namespace] && params[:repository_namespace].downcase
+  def get_repository_path
+    return params[:project][:path_with_namespace].downcase
   end
 
-
-  # Gets the repository identifier from the querystring parameters and if that's not supplied, assume
-  # the GitLab project identifier is the same as the repository identifier.
   def get_repository_identifier
-    repo_namespace = get_repository_namespace
-    repo_name = get_repository_name || get_project_identifier
-    identifier = repo_namespace.present? ? "#{repo_namespace}_#{repo_name}" : repo_name
-    return identifier
+    return get_repository_path.sub("/", "_")
   end
 
   # Gets the project identifier from the querystring parameters and if that's not supplied, assume
   # the GitLab repository identifier is the same as the project identifier.
   def get_project_identifier
-    identifier = params[:project_id] || params[:repository_name]
+    identifier = params[:project_id] || get_repository_name
     raise ActiveRecord::RecordNotFound, 'Project identifier not specified' if identifier.nil?
     return identifier
   end
@@ -150,15 +142,13 @@ class GitlabHookController < SysController
     raise TypeError, 'Local repository path is not set' unless Setting.plugin_redmine_gitlab_hook['local_repositories_path'].to_s.present?
 
     identifier = get_repository_identifier
-    remote_url = params[:repository_git_url]
+    remote_url = params[:repository] && params[:repository][:git_ssh_url]
     prefix = Setting.plugin_redmine_gitlab_hook['git_command_prefix'].to_s
 
     raise TypeError, 'Remote repository URL is null' unless remote_url.present?
 
     local_root_path = Setting.plugin_redmine_gitlab_hook['local_repositories_path']
-    repo_namespace = get_repository_namespace
-    repo_name = get_repository_name
-    local_url = File.join(local_root_path, repo_namespace, repo_name)
+    local_url = File.join(local_root_path, get_repository_path)
     git_file = File.join(local_url, 'HEAD')
 
     unless File.exists?(git_file)
