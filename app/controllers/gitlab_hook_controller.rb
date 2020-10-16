@@ -71,16 +71,16 @@ class GitlabHookController < SysController
 
   # Fetches updates from the remote repository
   def update_repository(repository)
-    Setting.plugin_redmine_gitlab_hook['prune'] == 'yes' ? prune = ' -p' : prune = ''
+    Setting.plugin_redmine_gitlab_hook['prune'] == 'yes' ? prune = '-p' : prune = ''
     prefix = Setting.plugin_redmine_gitlab_hook['git_command_prefix'].to_s
 
     if Setting.plugin_redmine_gitlab_hook['all_branches'] == 'yes'
-      command = git_command(prefix, "fetch --all#{prune}", repository)
+      command = git_command(prefix, "fetch --tags --prune-tags --all #{prune}", repository)
       return exec(command)
     else
-      command = git_command(prefix, "fetch#{prune} origin", repository)
+      command = git_command(prefix, "fetch --tags --prune-tags #{prune} origin", repository)
       return False if not exec(command)
-      command = git_command(prefix, "fetch#{prune} origin '+refs/heads/*:refs/heads/*'", repository)
+      command = git_command(prefix, "fetch #{prune} origin \"+refs/heads/*:refs/heads/*\" \"+refs/tags/*:refs/tags/*\"", repository)
       return exec(command)
     end
   end
